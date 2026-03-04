@@ -14,6 +14,7 @@ interface Props {
   targetLang: string;
   showSeek: boolean;
   onSeek: (ts: string) => void;
+  onPlay?: () => void;
 }
 
 function TimeInput({ value, onChange, t }: { value: string; onChange: (v: string) => void; t: ReturnType<typeof useTheme> }) {
@@ -58,7 +59,7 @@ function TimeInput({ value, onChange, t }: { value: string; onChange: (v: string
 
 export function SubtitlePanel({
   isDark, lines, activeLine, onActiveLine, onLineChange,
-  onRetranslateLine, engine, sourceLang, targetLang, showSeek, onSeek,
+  onRetranslateLine, engine, sourceLang, targetLang, showSeek, onSeek, onPlay,
 }: Props) {
   const t = useTheme(isDark);
 
@@ -84,7 +85,12 @@ export function SubtitlePanel({
       <div key={line.id}
         onClick={() => {
           onActiveLine(idx);
-          if (line.start) onSeek(line.start);
+          if (showSeek && line.start) onSeek(line.start);
+        }}
+        onDoubleClick={() => {
+          onActiveLine(idx);
+          if (showSeek && line.start) onSeek(line.start);
+          onPlay?.();
         }}
         style={{
           display: "flex", alignItems: "flex-start", padding: "9px 14px",
@@ -105,9 +111,13 @@ export function SubtitlePanel({
             <TimeInput value={line.start} onChange={v => onLineChange(idx, { start: v })} t={t} />
             <span style={{ fontSize: 9, color: t.muted }}>→</span>
             <TimeInput value={line.end} onChange={v => onLineChange(idx, { end: v })} t={t} />
-            {/* {showSeek && !isTranslation && (
+            {showSeek && (
               <button
-                onClick={e => { e.stopPropagation(); onSeek(line.start); }}
+                onClick={e => {
+                  e.stopPropagation();
+                  onSeek(line.start);
+                  onPlay?.();
+                }}
                 title="Seek video to this line"
                 style={{
                   fontSize: 9, color: t.muted, background: "none", border: "none",
@@ -116,7 +126,7 @@ export function SubtitlePanel({
                 onMouseEnter={e => { e.currentTarget.style.color = t.accent; }}
                 onMouseLeave={e => { e.currentTarget.style.color = t.muted; }}
               >▶</button>
-            )} */}
+            )}
           </div>
           {isTranslation ? (
             line.translation

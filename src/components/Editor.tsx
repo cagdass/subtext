@@ -178,6 +178,10 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport }:
         targetLang={targetLang}
         showSeek={!!videoUrl}
         onSeek={seekVideo}
+        onPlay={() => {
+          if (!videoRef.current) return;
+          videoRef.current.play().catch(() => { });
+        }}
       />
     </div>
   );
