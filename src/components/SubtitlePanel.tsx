@@ -82,7 +82,10 @@ export function SubtitlePanel({
     const isActive = activeLine === idx;
     return (
       <div key={line.id}
-        onClick={() => onActiveLine(idx)}
+        onClick={() => {
+          onActiveLine(idx);
+          if (line.start) onSeek(line.start);
+        }}
         style={{
           display: "flex", alignItems: "flex-start", padding: "9px 14px",
           borderBottom: `1px solid ${t.border}`, cursor: "pointer",
@@ -102,7 +105,7 @@ export function SubtitlePanel({
             <TimeInput value={line.start} onChange={v => onLineChange(idx, { start: v })} t={t} />
             <span style={{ fontSize: 9, color: t.muted }}>→</span>
             <TimeInput value={line.end} onChange={v => onLineChange(idx, { end: v })} t={t} />
-            {showSeek && !isTranslation && (
+            {/* {showSeek && !isTranslation && (
               <button
                 onClick={e => { e.stopPropagation(); onSeek(line.start); }}
                 title="Seek video to this line"
@@ -113,7 +116,7 @@ export function SubtitlePanel({
                 onMouseEnter={e => { e.currentTarget.style.color = t.accent; }}
                 onMouseLeave={e => { e.currentTarget.style.color = t.muted; }}
               >▶</button>
-            )}
+            )} */}
           </div>
           {isTranslation ? (
             line.translation
