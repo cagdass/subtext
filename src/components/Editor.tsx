@@ -190,9 +190,17 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport }:
 
   const seekVideo = (timeStr: string) => {
     if (!videoRef.current) return;
+
     const p = timeStr.split(/[:,]/);
     if (p.length < 4) return;
-    videoRef.current.currentTime = +p[0] * 3600 + +p[1] * 60 + +p[2] + +p[3] / 1000;
+
+    const seconds =
+      +p[0] * 3600 +
+      +p[1] * 60 +
+      +p[2] +
+      +p[3] / 1000;
+
+    videoRef.current.currentTime = Math.max(0, seconds - 0.3);
   };
 
   // ── Resizable divider ──
