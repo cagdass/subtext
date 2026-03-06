@@ -8,24 +8,29 @@ interface Props {
   onToggleTheme: () => void;
 }
 
-function SubTextIcon({ size = 28, accent, isDark }: { size?: number; accent: string; isDark: boolean }) {
-  const fg = isDark ? "#0e0e0f" : "#fff";
+function SubTextIcon({ size = 28, accent }: { size?: number; accent: string; isDark: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
-      {/* Spreader bar */}
-      <rect x="3" y="5" width="26" height="3" rx="1.5" fill={accent} />
-      {/* O-ring cuffs */}
-      <circle cx="5"  cy="6.5" r="2" stroke={accent} strokeWidth="1.2" fill="none" />
-      <circle cx="27" cy="6.5" r="2" stroke={accent} strokeWidth="1.2" fill="none" />
-      {/* SUB text */}
-      <text x="16" y="22" textAnchor="middle"
-        fontFamily="'IBM Plex Mono', monospace" fontWeight="700"
-        fontSize="11" fill={accent} letterSpacing="-0.5">
-        SUB
-      </text>
-      {/* Collar O-ring dangling off the B */}
-      <circle cx="24.5" cy="27" r="2.5" stroke={accent} strokeWidth="1.4" fill="none" opacity="0.75" />
-      <line x1="24.5" y1="23" x2="24.5" y2="24.5" stroke={accent} strokeWidth="1.2" strokeLinecap="round" opacity="0.6" />
+    <svg width={size} height={size} viewBox="0 0 512 512" fill="none">
+      <text
+        x="256" y="368"
+        textAnchor="middle"
+        fontFamily="Georgia, 'Times New Roman', serif"
+        fontSize="270"
+        fontWeight="700"
+        fill={accent}
+      >S</text>
+
+      {/* Left horn */}
+      <path d="M 192 193 C 175 163, 155 138, 165 105" stroke={accent} strokeWidth="13" strokeLinecap="round" fill="none" />
+      <path d="M 165 105 C 172 91, 185 93, 188 105" stroke={accent} strokeWidth="13" strokeLinecap="round" fill="none" />
+
+      {/* Right horn */}
+      <path d="M 320 193 C 337 163, 357 138, 347 105" stroke={accent} strokeWidth="13" strokeLinecap="round" fill="none" />
+      <path d="M 347 105 C 340 91, 327 93, 324 105" stroke={accent} strokeWidth="13" strokeLinecap="round" fill="none" />
+
+      {/* Tail */}
+      <path d="M 256 376 C 256 406, 256 423, 290 438 C 324 453, 348 443, 344 420 C 340 398, 318 393, 302 406" stroke={accent} strokeWidth="13" strokeLinecap="round" fill="none" />
+      <polygon points="302,406 286,418 308,422" fill={accent} />
     </svg>
   );
 }
