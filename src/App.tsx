@@ -5,6 +5,7 @@ import { SettingsScreen } from "./components/SettingsScreen";
 import { Titlebar } from "./components/Titlebar";
 import { loadSettings, saveSettings } from "./lib/settings";
 import type { AppSettings, SubtitleLine } from "./types";
+import { log } from "./lib/log";
 
 export type Screen = "editor" | "import" | "settings";
 
@@ -13,6 +14,8 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>("import");
   const [lines, setLines] = useState<SubtitleLine[]>([]);
   const [isDark, setIsDark] = useState(true);
+  const [pendingVideoUrl, setPendingVideoUrl] = useState<string | null>(null);
+
 
   // Resolve system theme preference
   useEffect(() => {
@@ -60,8 +63,9 @@ export default function App() {
       {screen === "import" && (
         <ImportScreen
           isDark={isDark}
-          onLoad={(loadedLines) => {
-            setLines(loadedLines);
+          onLoad={(loadedLines, videoUrl) => {
+            if (loadedLines.length > 0) setLines(loadedLines);
+            if (videoUrl !== undefined) setPendingVideoUrl(videoUrl);
             setScreen("editor");
           }}
         />
@@ -83,6 +87,7 @@ export default function App() {
           onLinesChange={setLines}
           settings={settings}
           onOpenImport={() => setScreen("import")}
+          initialVideoUrl={pendingVideoUrl ?? undefined}
         />
       )}
     </div>

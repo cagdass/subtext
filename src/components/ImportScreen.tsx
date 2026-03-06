@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useTheme } from "../hooks/useTheme";
 import { parseSubtitles, detectFormat } from "../lib/parser";
 import type { SubtitleLine } from "../types";
+import { log } from "../lib/log";
 
 interface Props {
   isDark: boolean;
-  onLoad: (lines: SubtitleLine[]) => void;
+  onLoad: (lines: SubtitleLine[], videoUrl?: string) => void;
 }
 
 export function ImportScreen({ isDark, onLoad }: Props) {
@@ -21,7 +22,9 @@ export function ImportScreen({ isDark, onLoad }: Props) {
     if (file.type.startsWith("video/")) {
       // For now, just open the editor with an empty line set and the video URL stored
       // TODO: extract embedded subtitles via ffmpeg Tauri sidecar
-      onLoad([]);
+      const url = URL.createObjectURL(file);
+      log("Loaded video file:", url);
+      onLoad([], url);
       return;
     }
 

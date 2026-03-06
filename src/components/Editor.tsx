@@ -7,6 +7,7 @@ import { translateLines } from "../lib/translator";
 import { serialiseSrt } from "../lib/parser";
 import type { SubtitleLine, AppSettings, VideoLayout, TranslationEngine } from "../types";
 import { ENGINES } from "../types";
+import { log, error } from "../lib/log";
 
 interface Props {
   isDark: boolean;
@@ -14,6 +15,7 @@ interface Props {
   onLinesChange: (lines: SubtitleLine[]) => void;
   settings: AppSettings;
   onOpenImport: () => void;
+  initialVideoUrl?: string;
 }
 
 type SubtitleDisplay = "off" | "source" | "target";
@@ -24,13 +26,13 @@ function timeStrToSeconds(timeStr: string): number {
   return +p[0] * 3600 + +p[1] * 60 + +p[2] + +p[3] / 1000;
 }
 
-export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport }: Props) {
+export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, initialVideoUrl }: Props) {
   const t = useTheme(isDark);
   const [engine, setEngine] = useState<TranslationEngine>(settings.defaultEngine);
   const [sourceLang, setSourceLang] = useState(settings.defaultSourceLang || "English");
   const [targetLang, setTargetLang] = useState(settings.defaultTargetLang || "");
   const [videoLayout, setVideoLayout] = useState<VideoLayout>(settings.videoLayout);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(initialVideoUrl ?? null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [activeLine, setActiveLine] = useState<number | null>(null);
@@ -38,6 +40,8 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport }:
   const [subtitleDisplay, setSubtitleDisplay] = useState<SubtitleDisplay>("target");
   const mainRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  // log(`Editor:videoUrl=${videoUrl}`);
 
   // Auto-detect active subtitle line based on video time to highlight it
   useEffect(() => {
@@ -158,7 +162,7 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport }:
         },
       });
     } catch (err) {
-      console.error("Translation error:", err);
+      error("Translation error:", err);
     } finally {
       setIsTranslating(false);
       setProgress(100);
@@ -175,7 +179,7 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport }:
       });
       updateLine(idx, { translation });
     } catch (err) {
-      console.error("Re-translate error:", err);
+      error("Re-translate error:", err);
     }
   };
 
