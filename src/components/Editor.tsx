@@ -195,6 +195,32 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport }:
     videoRef.current.currentTime = +p[0] * 3600 + +p[1] * 60 + +p[2] + +p[3] / 1000;
   };
 
+  // ── Keyboard navigation ──
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't hijack shortcuts when user is typing in an input/textarea
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveLine(prev => {
+          const next = prev === null ? 0 : Math.min(prev + 1, lines.length - 1);
+          return next;
+        });
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveLine(prev => {
+          const next = prev === null ? 0 : Math.max(prev - 1, 0);
+          return next;
+        });
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lines.length]);
+
   // ── Resizable divider ──
   const handleDividerDrag = useCallback((clientPos: number) => {
     if (!mainRef.current) return;

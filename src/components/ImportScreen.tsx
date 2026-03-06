@@ -68,11 +68,24 @@ export function ImportScreen({ isDark, onLoad }: Props) {
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => {
-          // In Tauri this will use dialog.open() — for now a plain input
           const input = document.createElement("input");
           input.type = "file";
           input.accept = ".srt,.vtt,.ass,.sub,.mp4,.mkv,.mov,.avi";
-          input.onchange = () => { if (input.files?.[0]) handleFile(input.files[0]); };
+          input.style.display = "none";
+
+          // Append to DOM so Safari doesn't GC it mid-selection
+          document.body.appendChild(input);
+
+          input.onchange = () => {
+            if (input.files?.[0]) handleFile(input.files[0]);
+            document.body.removeChild(input); // clean up
+          };
+
+          // Also clean up if user cancels without selecting
+          input.addEventListener("cancel", () => {
+            document.body.removeChild(input);
+          });
+
           input.click();
         }}
         style={{
