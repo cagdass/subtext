@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useTheme } from "../hooks/useTheme";
 import type { SubtitleLine, TranslationEngine } from "../types";
 
@@ -63,22 +63,6 @@ export function SubtitlePanel({
 }: Props) {
   const t = useTheme(isDark);
 
-  const originalScrollRef = useRef<HTMLDivElement>(null);
-  const translationScrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (activeLine === null) return;
-
-    const sel = `[data-line-idx="${activeLine}"]`;
-
-    const a = originalScrollRef.current?.querySelector(sel) as HTMLElement | null;
-    const b = translationScrollRef.current?.querySelector(sel) as HTMLElement | null;
-
-    // Use 'auto' to avoid jitter; change to 'smooth' if you like it.
-    a?.scrollIntoView({ block: "center", behavior: "auto" });
-    b?.scrollIntoView({ block: "center", behavior: "auto" });
-  }, [activeLine]);
-
   const colHeader = (label: string, right?: React.ReactNode) => (
     <div style={{
       display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -98,9 +82,7 @@ export function SubtitlePanel({
   const renderLine = (line: SubtitleLine, idx: number, isTranslation: boolean) => {
     const isActive = activeLine === idx;
     return (
-      <div
-        key={line.id}
-        data-line-idx={idx}
+      <div key={line.id}
         onClick={() => {
           onActiveLine(idx);
           if (showSeek && line.start) onSeek(line.start);
@@ -210,7 +192,7 @@ export function SubtitlePanel({
       {/* Original column */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", borderRight: `1px solid ${t.border}` }}>
         {colHeader(`Original · ${sourceLang}`, `${lines.length} lines`)}
-        <div ref={originalScrollRef} style={scrollStyle}>
+        <div style={scrollStyle}>
           {lines.map((line, idx) => renderLine(line, idx, false))}
         </div>
       </div>
@@ -218,7 +200,7 @@ export function SubtitlePanel({
       {/* Translation column */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {colHeader(`Translation · ${targetLang}`, <span style={{ color: t.accent }}>{translated}/{lines.length}</span>)}
-        <div ref={translationScrollRef} style={scrollStyle}>
+        <div style={scrollStyle}>
           {lines.map((line, idx) => renderLine(line, idx, true))}
         </div>
       </div>

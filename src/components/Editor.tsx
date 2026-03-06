@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useTheme } from "../hooks/useTheme";
 import { SubtitlePanel } from "./SubtitlePanel";
 import { VideoPanel } from "./VideoPanel";
@@ -18,12 +18,6 @@ interface Props {
 
 type SubtitleDisplay = "off" | "source" | "target";
 
-function timeStrToSeconds(timeStr: string): number {
-  const p = timeStr.trim().split(/[:,]/);
-  if (p.length < 4) return 0;
-  return +p[0] * 3600 + +p[1] * 60 + +p[2] + +p[3] / 1000;
-}
-
 export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport }: Props) {
   const t = useTheme(isDark);
   const [engine, setEngine] = useState<TranslationEngine>(settings.defaultEngine);
@@ -38,93 +32,6 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport }:
   const [subtitleDisplay, setSubtitleDisplay] = useState<SubtitleDisplay>("target");
   const mainRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-
-  // Auto-detect active subtitle line based on video time to highlight it
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-
-    const updateActive = () => {
-      const t = v.currentTime;
-
-      // Binary search would be more efficient for large files,
-      // but linear scan is simpler and subtitle files are usually not huge
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-
-        // Convert "HH:MM:SS,mmm" to seconds
-        const p = line.start.split(/[:,]/);
-        const start =
-          +p[0] * 3600 +
-          +p[1] * 60 +
-          +p[2] +
-          +p[3] / 1000;
-
-
-        const p2 = line.end.split(/[:,]/);
-        const end =
-          +p2[0] * 3600 +
-          +p2[1] * 60 +
-          +p2[2] +
-          +p2[3] / 1000;
-
-        // Check if current video time is within the subtitle line's time range
-        if (t >= start && t <= end) {
-          setActiveLine(i);
-          break;
-        }
-      }
-    };
-
-    v.addEventListener("timeupdate", updateActive);
-
-    return () => {
-      v.removeEventListener("timeupdate", updateActive);
-    };
-  }, [lines]);
-
-  const timings = useMemo(() => {
-    return lines.map((l) => ({
-      start: timeStrToSeconds(l.start),
-      end: timeStrToSeconds(l.end),
-    }));
-  }, [lines]);
-
-  useEffect(() => {
-    const v = videoRef.current;
-    if (!v || !videoUrl) return;
-
-    const updateActive = () => {
-      const t = v.currentTime;
-
-      // simple linear scan (fine for MVP)
-      let found = -1;
-      for (let i = 0; i < timings.length; i++) {
-        const { start, end } = timings[i];
-        if (t >= start && t <= end) {
-          found = i;
-          break;
-        }
-      }
-
-      // avoid re-setting state every tick
-      if (found !== -1) {
-        setActiveLine((prev) => (prev === found ? prev : found));
-      }
-    };
-
-    // update immediately + on changes
-    updateActive();
-    v.addEventListener("timeupdate", updateActive);
-    v.addEventListener("seeked", updateActive);
-    v.addEventListener("loadedmetadata", updateActive);
-
-    return () => {
-      v.removeEventListener("timeupdate", updateActive);
-      v.removeEventListener("seeked", updateActive);
-      v.removeEventListener("loadedmetadata", updateActive);
-    };
-  }, [videoUrl, timings]);
 
   // Helper to map language names to BCP-47 codes
   const langToCode = (lang: string) => {
