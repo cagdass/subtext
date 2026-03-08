@@ -133,9 +133,6 @@ export function VideoPanel({
       ...(isH ? { height: size } : { width: size }),
     }}>
       {/* Header */}
-      <div style={{ position: "absolute", top: 30, left: 10, fontSize: 10, background: "rgba(0,0,0,0.6)", color: "#fff", padding: 6, borderRadius: 4 }}>
-        srt: {subtitleSrt ? subtitleSrt.length : 0}
-      </div>
       <div style={{
         padding: "7px 12px", borderBottom: `1px solid ${t.border}`,
         fontSize: 10, letterSpacing: 1, textTransform: "uppercase" as const,
