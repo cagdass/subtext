@@ -15,6 +15,7 @@ interface Props {
   showSeek: boolean;
   onSeek: (ts: string) => void;
   onPlay?: () => void;
+  searchQuery?: string;
 }
 
 function TimeInput({ value, onChange, t }: { value: string; onChange: (v: string) => void; t: ReturnType<typeof useTheme> }) {
@@ -57,9 +58,25 @@ function TimeInput({ value, onChange, t }: { value: string; onChange: (v: string
   );
 }
 
+function highlightText(text: string, query: string, accentColor: string) {
+  if (!query.trim() || !text) return <>{text}</>;
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part)
+          ? <mark key={i} style={{ background: accentColor, color: "#0e0e0f", borderRadius: 2, padding: "0 1px" }}>{part}</mark>
+          : part
+      )}
+    </>
+  );
+}
+
 export function SubtitlePanel({
   isDark, lines, activeLine, onActiveLine, onLineChange,
   onRetranslateLine, engine, sourceLang, targetLang, showSeek, onSeek, onPlay,
+  searchQuery = '',
 }: Props) {
   const t = useTheme(isDark);
 
@@ -147,34 +164,37 @@ export function SubtitlePanel({
             )}
           </div>
           {isTranslation ? (
-            line.translation
-              ? (
-                <textarea
-                  value={line.translation}
-                  onChange={e => { e.stopPropagation(); onLineChange(idx, { translation: e.target.value }); }}
-                  rows={isActive ? 2 : 1}
-                  style={{
-                    background: "transparent", border: "none", color: t.text, width: "100%",
-                    fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, lineHeight: 1.5,
-                    resize: "none", outline: "none",
-                  }}
-                />
-              )
-              : (
-                <textarea
-                  // value={line.translation}
-                  placeholder={engine === "manual" ? "Enter translation..." : "Not translated yet"}
-                  onChange={e => { e.stopPropagation(); onLineChange(idx, { translation: e.target.value }); }}
-                  rows={isActive ? 2 : 1}
-                  style={{
-                    background: "transparent", border: "none", color: t.text, width: "100%",
-                    fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, lineHeight: 1.5,
-                    resize: "none", outline: "none",
-                  }}
-                />
-              )
+            searchQuery && line.translation ? (
+              <div style={{ fontSize: 12, lineHeight: 1.5, color: t.text }}>
+                {highlightText(line.translation, searchQuery, t.accent)}
+              </div>
+            ) : line.translation ? (
+              <textarea
+                value={line.translation}
+                onChange={e => { e.stopPropagation(); onLineChange(idx, { translation: e.target.value }); }}
+                rows={isActive ? 2 : 1}
+                style={{
+                  background: "transparent", border: "none", color: t.text, width: "100%",
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, lineHeight: 1.5,
+                  resize: "none", outline: "none",
+                }}
+              />
+            ) : (
+              <textarea
+                placeholder={engine === "manual" ? "Enter translation..." : "Not translated yet"}
+                onChange={e => { e.stopPropagation(); onLineChange(idx, { translation: e.target.value }); }}
+                rows={isActive ? 2 : 1}
+                style={{
+                  background: "transparent", border: "none", color: t.text, width: "100%",
+                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, lineHeight: 1.5,
+                  resize: "none", outline: "none",
+                }}
+              />
+            )
           ) : (
-            <div style={{ fontSize: 12, lineHeight: 1.5, color: t.text }}>{line.original}</div>
+            <div style={{ fontSize: 12, lineHeight: 1.5, color: t.text }}>
+              {highlightText(line.original, searchQuery, t.accent)}
+            </div>
           )}
         </div>
 

@@ -41,8 +41,23 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
   const [subtitleDisplay, setSubtitleDisplay] = useState<SubtitleDisplay>("target");
   const mainRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  // Keep track of activeLine in a ref for keyboard navigation
+  // to avoid stale closures
   const activeLineRef = useRef(activeLine);
   useEffect(() => { activeLineRef.current = activeLine; }, [activeLine]);
+  // For find in page functionality
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchMatchIndex, setSearchMatchIndex] = useState(0);
+  const linesRef = useRef(lines);
+  useEffect(() => { linesRef.current = lines; }, [lines]);
+  const matchesSearch = (line: SubtitleLine, query: string) => {
+    const q = query.toLowerCase();
+    return (
+      line.original?.toLowerCase().includes(q) ||
+      line.translation?.toLowerCase().includes(q)
+    );
+  };
 
   // log(`Editor:videoUrl=${videoUrl}`);
 
@@ -251,8 +266,28 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
         }
         if (idx !== -1) setActiveLine(idx);
 
-      } else if (e.key === "Escape") {
-        setActiveLine(null);
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+      if (e.key === "Escape") {
+        if (searchOpen) { setSearchOpen(false); setSearchQuery(""); }
+        else setActiveLine(null);
+      }
+      if (e.key === "Enter" && searchOpen && searchQuery) {
+        e.preventDefault();
+        // cycle to next/prev match
+        const matches = linesRef.current
+          .map((l, i) => i)
+          .filter(i => matchesSearch(linesRef.current[i], searchQuery));
+        if (!matches.length) return;
+        const next = e.shiftKey
+          ? (searchMatchIndex - 1 + matches.length) % matches.length
+          : (searchMatchIndex + 1) % matches.length;
+        setSearchMatchIndex(next);
+        setActiveLine(matches[next]);
       }
     };
 
@@ -340,6 +375,7 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
           if (!videoRef.current) return;
           videoRef.current.play().catch(() => { });
         }}
+        searchQuery={searchQuery}
       />
     </div>
   );
@@ -381,6 +417,55 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
       <div style={{ height: 2, background: t.border, flexShrink: 0 }}>
         <div style={{ height: "100%", width: `${progress}%`, background: t.accent, transition: "width 0.3s ease" }} />
       </div>
+
+      {/* Search bar */}
+      {searchOpen && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8,
+          padding: "6px 14px", borderBottom: `1px solid ${t.border}`,
+          background: t.surface, flexShrink: 0,
+        }}>
+          <input
+            autoFocus
+            value={searchQuery}
+            onChange={e => { setSearchQuery(e.target.value); setSearchMatchIndex(0); }}
+            onKeyDown={e => {
+              if (e.key === "Escape") { setSearchOpen(false); setSearchQuery(""); }
+              if (e.key === "Enter") {
+                const matches = lines.map((l, i) => i).filter(i => matchesSearch(lines[i], searchQuery));
+                if (!matches.length) return;
+                const next = e.shiftKey
+                  ? (searchMatchIndex - 1 + matches.length) % matches.length
+                  : (searchMatchIndex + 1) % matches.length;
+                setSearchMatchIndex(next);
+                setActiveLine(matches[next]);
+              }
+            }}
+            placeholder="Search lines…"
+            style={{
+              background: "transparent", border: `1px solid ${t.border}`,
+              borderRadius: 4, color: t.text, padding: "3px 8px",
+              fontFamily: "'IBM Plex Mono', monospace", fontSize: 11,
+              outline: "none", width: 220,
+            }}
+            onFocus={e => { e.currentTarget.style.borderColor = t.accent; }}
+            onBlur={e => { e.currentTarget.style.borderColor = t.border; }}
+          />
+          {searchQuery && (
+            <span style={{ fontSize: 10, color: t.muted }}>
+              {(() => {
+                const matches = lines.map((l, i) => i).filter(i => matchesSearch(lines[i], searchQuery));
+                return matches.length ? `${searchMatchIndex + 1} / ${matches.length}` : "no matches";
+              })()}
+            </span>
+          )}
+          <button
+            onClick={() => { setSearchOpen(false); setSearchQuery(""); }}
+            style={{ background: "none", border: "none", color: t.muted, cursor: "pointer", fontSize: 12 }}
+          >✕</button>
+        </div>
+      )}
+
 
       {/* Main area */}
       <div ref={mainRef} style={{ display: "flex", flex: 1, overflow: "hidden", flexDirection: isH ? "column" : "row" }}>
