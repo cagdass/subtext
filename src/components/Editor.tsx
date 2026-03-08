@@ -273,6 +273,8 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
         setSearchOpen(true);
       }
       if (e.key === "Escape") {
+        // Stop it from disabling full-screen etc.
+        e.preventDefault();
         if (searchOpen) { setSearchOpen(false); setSearchQuery(""); }
         else setActiveLine(null);
       }

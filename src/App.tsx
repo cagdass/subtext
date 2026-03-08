@@ -56,6 +56,18 @@ export default function App() {
     return () => mq.removeEventListener("change", resolve);
   }, [settings.theme]);
 
+  // Prevent Escape key from exiting full-screen app,
+  // which is a common user action for exiting search mode
+  // or disselecting lines, and can be frustrating
+  // if it causes the app to exit full-screen.
+  useEffect(() => {
+    const preventEscFullscreen = (e: KeyboardEvent) => {
+      if (e.key === "Escape") e.preventDefault();
+    };
+    document.addEventListener("keydown", preventEscFullscreen, { capture: true });
+    return () => document.removeEventListener("keydown", preventEscFullscreen, { capture: true });
+  }, []);
+
   const updateSettings = (patch: Partial<AppSettings>) => {
     const updated = { ...settings, ...patch };
     setSettings(updated);
