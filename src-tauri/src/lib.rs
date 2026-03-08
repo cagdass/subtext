@@ -1,18 +1,12 @@
-// SubText — Tauri backend
-// Kept intentionally minimal for v0.1.
-// All translation happens in the frontend (direct API calls from the webview).
-// This backend handles native OS integration: file dialogs, fs access, etc.
-
+use tauri::menu::{MenuBuilder, MenuItem, SubmenuBuilder};
+use tauri::Emitter;
 use tauri::Manager;
 
-/// Read a subtitle or video file from disk and return its contents as a string.
-/// Video files return an empty string (handled natively in the webview).
 #[tauri::command]
 fn read_file(path: String) -> Result<String, String> {
     std::fs::read_to_string(&path).map_err(|e| e.to_string())
 }
 
-/// Write a string to disk at the given path.
 #[tauri::command]
 fn write_file(path: String, contents: String) -> Result<(), String> {
     std::fs::write(&path, contents).map_err(|e| e.to_string())
@@ -27,6 +21,34 @@ pub fn run() {
                 let window = app.get_webview_window("main").unwrap();
                 window.open_devtools();
             }
+
+            // Build menu
+            let handle = app.handle();
+            let file_menu = SubmenuBuilder::new(handle, "File")
+                .item(&MenuItem::with_id(
+                    handle,
+                    "open_file",
+                    "Open File…",
+                    true,
+                    Some("CmdOrCtrl+O"),
+                )?)
+                .separator()
+                .quit()
+                .build()?;
+
+            let menu = MenuBuilder::new(handle).item(&file_menu).build()?;
+
+            app.set_menu(menu)?;
+
+            app.on_menu_event(|app, event| {
+                if event.id().as_ref() == "open_file" {
+                    app.get_webview_window("main")
+                        .unwrap()
+                        .emit("menu-open-file", ())
+                        .unwrap();
+                }
+            });
+
             Ok(())
         })
         .plugin(tauri_plugin_dialog::init())

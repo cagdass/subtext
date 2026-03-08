@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useTheme } from "../hooks/useTheme";
 import { parseSubtitles, detectFormat } from "../lib/parser";
 import type { SubtitleLine } from "../types";
+import { handleFileObject } from "../lib/fileHandler";
+
 import { log } from "../lib/log";
 
 interface Props {
@@ -15,32 +17,12 @@ export function ImportScreen({ isDark, onLoad }: Props) {
   const [pasteText, setPasteText] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const handleFile = async (file: File) => {
-    setError(null);
-
-    // Video file — load it and open the editor (subtitle extraction is future work)
-    if (file.type.startsWith("video/")) {
-      // For now, just open the editor with an empty line set and the video URL stored
-      // TODO: extract embedded subtitles via ffmpeg Tauri sidecar
-      const url = URL.createObjectURL(file);
-      log("Loaded video file:", url);
-      onLoad([], url);
-      return;
-    }
-
-    const format = detectFormat(file.name);
-    if (!format) {
-      setError(`Unsupported file type: .${file.name.split(".").pop()}`);
-      return;
-    }
-
-    const text = await file.text();
-    const lines = parseSubtitles(text, format);
-    if (lines.length === 0) {
-      setError("No subtitle lines found in this file.");
-      return;
-    }
-    onLoad(lines);
+  const handleFile = (file: File) => {
+    handleFileObject(
+      file,
+      (lines) => onLoad(lines),
+      (url) => onLoad([], url),
+    );
   };
 
   const handleDrop = (e: React.DragEvent) => {

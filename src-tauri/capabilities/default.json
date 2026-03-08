@@ -1,0 +1,23 @@
+{
+  "identifier": "default",
+  "description": "Default capabilities",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "core:event:allow-listen",
+    "core:event:allow-emit",
+    "dialog:allow-open",
+    "fs:read-files"
+  ],
+  "assets": {
+    "all": true,
+    "extensions": [
+      "mp4",
+      "mkv",
+      "mov",
+      "avi"
+    ]
+  }
+}

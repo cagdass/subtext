@@ -5,6 +5,9 @@ import { SettingsScreen } from "./components/SettingsScreen";
 import { Titlebar } from "./components/Titlebar";
 import { loadSettings, saveSettings } from "./lib/settings";
 import type { AppSettings, SubtitleLine } from "./types";
+import { listen } from "@tauri-apps/api/event";
+import { open } from "@tauri-apps/plugin-dialog";
+import { handleFilePath } from "./lib/fileHandler";
 import { log } from "./lib/log";
 
 export type Screen = "editor" | "import" | "settings";
@@ -16,6 +19,25 @@ export default function App() {
   const [isDark, setIsDark] = useState(true);
   const [pendingVideoUrl, setPendingVideoUrl] = useState<string | null>(null);
 
+
+
+
+  useEffect(() => {
+    const unlisten = listen("menu-open-file", async () => {
+      const path = await open({
+        multiple: false,
+        filters: [{ name: "Subtitles & Video", extensions: ["srt", "vtt", "ass", "sub", "mp4", "mkv", "mov", "avi"] }],
+      });
+      if (!path) return;
+
+      await handleFilePath(
+        path as string,
+        (lines) => { setLines(lines); setScreen("editor"); },
+        (url) => { setPendingVideoUrl(url); setScreen("editor"); },
+      );
+    });
+    return () => { unlisten.then(f => f()); };
+  }, []);
 
   // Resolve system theme preference
   useEffect(() => {
