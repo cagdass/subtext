@@ -209,7 +209,7 @@ export function SubtitlePanel({
     <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
       {/* Original column */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", borderRight: `1px solid ${t.border}` }}>
-        {colHeader(`Original · ${sourceLang}`, `${lines.length} lines`)}
+        {colHeader(`Original · ${sourceLang}`, `${activeLine !== null ? activeLine + 1 : "-"}/${lines.length}`)}
         <div ref={originalScrollRef} style={scrollStyle}>
           {lines.map((line, idx) => renderLine(line, idx, false))}
         </div>

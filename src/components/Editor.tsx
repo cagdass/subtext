@@ -41,6 +41,8 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
   const [subtitleDisplay, setSubtitleDisplay] = useState<SubtitleDisplay>("target");
   const mainRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const activeLineRef = useRef(activeLine);
+  useEffect(() => { activeLineRef.current = activeLine; }, [activeLine]);
 
   // log(`Editor:videoUrl=${videoUrl}`);
 
@@ -198,18 +200,59 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
 
-      if (e.key === "ArrowDown") {
+      // Jump by 1
+      if (e.key === "ArrowDown" && !e.shiftKey && !e.metaKey) {
         e.preventDefault();
-        setActiveLine(prev => {
-          const next = prev === null ? 0 : Math.min(prev + 1, lines.length - 1);
-          return next;
-        });
-      } else if (e.key === "ArrowUp") {
+        setActiveLine(prev => prev === null ? 0 : Math.min(prev + 1, lines.length - 1));
+
+      } else if (e.key === "ArrowUp" && !e.shiftKey && !e.metaKey) {
         e.preventDefault();
-        setActiveLine(prev => {
-          const next = prev === null ? 0 : Math.max(prev - 1, 0);
-          return next;
-        });
+        setActiveLine(prev => prev === null ? 0 : Math.max(prev - 1, 0));
+
+        // Jump by 10
+      } else if (e.key === "ArrowDown" && e.shiftKey) {
+        e.preventDefault();
+        setActiveLine(prev => prev === null ? 0 : Math.min(prev + 10, lines.length - 1));
+
+      } else if (e.key === "ArrowUp" && e.shiftKey) {
+        e.preventDefault();
+        setActiveLine(prev => prev === null ? 0 : Math.max(prev - 10, 0));
+
+        // Jump by 50
+      } else if (e.key === "ArrowDown" && e.metaKey) {
+        e.preventDefault();
+        setActiveLine(prev => prev === null ? 0 : Math.min(prev + 50, lines.length - 1));
+
+      } else if (e.key === "ArrowUp" && e.metaKey) {
+        e.preventDefault();
+        setActiveLine(prev => prev === null ? 0 : Math.max(prev - 50, 0));
+
+        // Tab → next untranslated
+      } else if (e.key === "Tab" && !e.shiftKey) {
+        e.preventDefault();
+        const current = activeLineRef.current;
+        const start = current === null ? 0 : current + 1;
+        let idx = lines.findIndex((l, i) => i >= start && !l.translation?.trim());
+        if (idx === -1) idx = lines.findIndex(l => !l.translation?.trim()); // wrap
+        if (idx !== -1) setActiveLine(idx);
+        // Shift + Tab → previous untranslated
+      } else if (e.key === "Tab" && e.shiftKey) {
+        e.preventDefault();
+        const current = activeLineRef.current;
+        const start = current === null ? lines.length - 1 : current - 1;
+        let idx = -1;
+        for (let i = start; i >= 0; i--) {
+          if (!lines[i].translation?.trim()) { idx = i; break; }
+        }
+        if (idx === -1) {
+          for (let i = lines.length - 1; i > start; i--) {
+            if (!lines[i].translation?.trim()) { idx = i; break; }
+          }
+        }
+        if (idx !== -1) setActiveLine(idx);
+
+      } else if (e.key === "Escape") {
+        setActiveLine(null);
       }
     };
 
