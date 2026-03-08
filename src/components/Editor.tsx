@@ -46,6 +46,7 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
   const activeLineRef = useRef(activeLine);
   useEffect(() => { activeLineRef.current = activeLine; }, [activeLine]);
   // For find in page functionality
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchMatchIndex, setSearchMatchIndex] = useState(0);
@@ -211,7 +212,19 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
   // ── Keyboard navigation ──
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't hijack shortcuts when user is typing in an input/textarea
+      // Cmd+F always opens search, even from inputs/textareas
+      if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+        log("Opening search");
+        e.preventDefault();
+        if (searchOpen) {
+          searchInputRef.current?.focus(); // already open, just focus it
+        } else {
+          setSearchOpen(true); // autoFocus handles it on mount
+        }
+        return;
+      }
+
+      // Otherwise don't hijack shortcuts when user is typing in an input/textarea
       const tag = (e.target as HTMLElement).tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
 
@@ -428,6 +441,7 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
           background: t.surface, flexShrink: 0,
         }}>
           <input
+            ref={searchInputRef}
             autoFocus
             value={searchQuery}
             onChange={e => { setSearchQuery(e.target.value); setSearchMatchIndex(0); }}
