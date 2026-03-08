@@ -16,6 +16,7 @@ interface Props {
   settings: AppSettings;
   onOpenImport: () => void;
   initialVideoUrl?: string;
+  handleExport: () => void;
 }
 
 type SubtitleDisplay = "off" | "source" | "target";
@@ -26,7 +27,7 @@ function timeStrToSeconds(timeStr: string): number {
   return +p[0] * 3600 + +p[1] * 60 + +p[2] + +p[3] / 1000;
 }
 
-export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, initialVideoUrl }: Props) {
+export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, initialVideoUrl, handleExport }: Props) {
   const t = useTheme(isDark);
   const [engine, setEngine] = useState<TranslationEngine>(settings.defaultEngine);
   const [sourceLang, setSourceLang] = useState(settings.defaultSourceLang || "English");
@@ -181,15 +182,6 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
     } catch (err) {
       error("Re-translate error:", err);
     }
-  };
-
-  const handleExport = () => {
-    const srt = serialiseSrt(lines);
-    const blob = new Blob([srt], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "translated.srt"; a.click();
-    URL.revokeObjectURL(url);
   };
 
   const seekVideo = (timeStr: string) => {

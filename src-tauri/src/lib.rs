@@ -32,6 +32,13 @@ pub fn run() {
                     true,
                     Some("CmdOrCtrl+O"),
                 )?)
+                .item(&MenuItem::with_id(
+                    handle,
+                    "export",
+                    "Export SRT…",
+                    true,
+                    Some("CmdOrCtrl+S"),
+                )?)
                 .separator()
                 .quit()
                 .build()?;
@@ -40,13 +47,20 @@ pub fn run() {
 
             app.set_menu(menu)?;
 
-            app.on_menu_event(|app, event| {
-                if event.id().as_ref() == "open_file" {
+            app.on_menu_event(|app, event| match event.id().as_ref() {
+                "open_file" => {
                     app.get_webview_window("main")
                         .unwrap()
                         .emit("menu-open-file", ())
                         .unwrap();
                 }
+                "export" => {
+                    app.get_webview_window("main")
+                        .unwrap()
+                        .emit("menu-export", ())
+                        .unwrap();
+                }
+                _ => {}
             });
 
             Ok(())

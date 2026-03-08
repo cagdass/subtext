@@ -9,6 +9,7 @@ import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import { handleFilePath } from "./lib/fileHandler";
 import { log } from "./lib/log";
+import { serialiseSrt } from "./lib/parser";
 
 export type Screen = "editor" | "import" | "settings";
 
@@ -19,9 +20,7 @@ export default function App() {
   const [isDark, setIsDark] = useState(true);
   const [pendingVideoUrl, setPendingVideoUrl] = useState<string | null>(null);
 
-
-
-
+  // Listen for "open file" events from the main process
   useEffect(() => {
     const unlisten = listen("menu-open-file", async () => {
       const path = await open({
@@ -38,6 +37,12 @@ export default function App() {
     });
     return () => { unlisten.then(f => f()); };
   }, []);
+
+  // Listen for "export subtitle" events from the main process
+  useEffect(() => {
+    const unlisten = listen("menu-export", () => handleExport());
+    return () => { unlisten.then(f => f()); };
+  }, [lines]); // lines in deps so handleExport always has fresh data
 
   // Resolve system theme preference
   useEffect(() => {
@@ -61,6 +66,16 @@ export default function App() {
     const next = isDark ? "light" : "dark";
     updateSettings({ theme: next });
     setIsDark(!isDark);
+  };
+
+  const handleExport = () => {
+    if (lines.length === 0) return;
+    const srt = serialiseSrt(lines);
+    const blob = new Blob([srt], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "translated.srt"; a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -110,6 +125,7 @@ export default function App() {
           settings={settings}
           onOpenImport={() => setScreen("import")}
           initialVideoUrl={pendingVideoUrl ?? undefined}
+          handleExport={handleExport}
         />
       )}
     </div>
