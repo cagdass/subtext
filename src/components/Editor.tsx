@@ -225,8 +225,12 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
       }
 
       // Otherwise don't hijack shortcuts when user is typing in an input/textarea
-      const tag = (e.target as HTMLElement).tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA") return;
+      // Let text editing shortcuts pass through when typing
+      const el = document.activeElement;
+      const isTyping = el?.tagName === "INPUT"
+        || el?.tagName === "TEXTAREA"
+        || (el as HTMLElement)?.isContentEditable;
+      if (isTyping) return;
 
       // Jump by 1
       if (e.key === "ArrowDown" && !e.shiftKey && !e.metaKey) {
