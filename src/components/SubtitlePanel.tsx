@@ -73,6 +73,19 @@ function highlightText(text: string, query: string, accentColor: string) {
   );
 }
 
+function renderWithTags(text: string, mutedColor: string, query: string, accentColor: string) {
+  const parts = text.split(/(\{[^}]*\})/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        part.startsWith("{") && part.endsWith("}")
+          ? <span key={i} style={{ color: 'gray', fontSize: 10, opacity: 0.8 }}>{part}</span>
+          : <span key={i}>{highlightText(part, query, accentColor)}</span>
+      )}
+    </>
+  );
+}
+
 export function SubtitlePanel({
   isDark, lines, activeLine, onActiveLine, onLineChange,
   onRetranslateLine, engine, sourceLang, targetLang, showSeek, onSeek, onPlay,
@@ -193,7 +206,7 @@ export function SubtitlePanel({
             )
           ) : (
             <div style={{ fontSize: 12, lineHeight: 1.5, color: t.text }}>
-              {highlightText(line.original, searchQuery, t.accent)}
+              {renderWithTags(line.original, t.muted, searchQuery, t.accent)}
             </div>
           )}
         </div>
