@@ -40,6 +40,7 @@ export function VideoPanel({
   const t = useTheme(isDark);
   const isH = layout === "top" || layout === "bottom";
   const [trackUrl, setTrackUrl] = useState<string | null>(null);
+  const [videoHover, setVideoHover] = useState(false);
 
   // useEffect(() => {
   //   console.log("[VideoPanel props]", {
@@ -232,15 +233,32 @@ export function VideoPanel({
           style={{
             flex: 1, display: "flex", flexDirection: "column",
             alignItems: "center", justifyContent: "center",
-            gap: 8, color: t.muted, fontSize: 11, cursor: "pointer",
-            transition: "color 0.15s", minHeight: 80,
+            cursor: "pointer", padding: 24, minHeight: 80,
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.color = t.secondaryText; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.color = t.muted; }}
+          onMouseEnter={() => setVideoHover(true)}
+          onMouseLeave={() => setVideoHover(false)}
         >
-          <span style={{ fontSize: 24 }}>▶</span>
-          <span>Load a video file</span>
-          <span style={{ fontSize: 10, color: t.muted }}>mp4 · mkv · mov · avi</span>
+          <div
+            className="drop-zone"
+            style={{
+              width: "100%", height: "100%",
+              border: `1px dashed ${videoHover ? t.accent : t.border}`,
+              borderRadius: 6,
+              color: videoHover ? t.text : t.muted,
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+              gap: 10,
+              transition: "border-color 0.15s, color 0.15s",
+              minHeight: 80,
+            }}
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="2" width="20" height="20" rx="3" />
+              <polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none" />
+            </svg>
+            <span style={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace" }}>open video file</span>
+            <span style={{ fontSize: 9, letterSpacing: 1, opacity: 0.6 }}>mp4 · mkv · mov · avi</span>
+          </div>
         </div>
       )}
     </div>
