@@ -35,17 +35,37 @@ export default function App() {
 
   const [activeLine, setActiveLine] = useState<number | null>(null);
 
+  // Store the pending entry in a ref so we can flush it
+  const pendingEntryRef = useRef<HistoryEntry | null>(null);
+
+  const flushHistory = () => {
+    if (!pendingEntryRef.current) return;
+    clearTimeout(debounceRef.current);
+    const entry = pendingEntryRef.current;
+    pendingEntryRef.current = null;
+    setHistory(prev => [...prev.slice(0, historyIndexRef.current + 1), entry]);
+    setHistoryIndex(i => i + 1);
+  };
+
   const handleLinesChange = (newLines: SubtitleLine[]) => {
     const changedIndex = newLines.findIndex((l, i) => l !== lines[i]);
     if (changedIndex !== -1) {
+      // Keep the original `before` if we're still on the same line
+      const before = pendingEntryRef.current?.lineIndex === changedIndex
+        ? pendingEntryRef.current.before  // 👈 preserve original
+        : lines[changedIndex];            // 👈 first edit of this line
+
       const entry: HistoryEntry = {
         lineIndex: changedIndex,
-        before: lines[changedIndex],
+        before,
         after: newLines[changedIndex],
         activeLine,
       };
+
+      pendingEntryRef.current = entry;
       clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
+        pendingEntryRef.current = null;
         setHistory(prev => [...prev.slice(0, historyIndexRef.current + 1), entry]);
         setHistoryIndex(i => i + 1);
       }, 600);
@@ -60,14 +80,30 @@ export default function App() {
       if (!(e.metaKey || e.ctrlKey)) return;
       if (e.key === "z" && !e.shiftKey) {
         e.preventDefault();
-        if (historyIndex < 0) return; // 👈 < not <=
-        const entry = history[historyIndex]; // 👈 not historyIndex - 1
+
+        // If there's a pending unflushed edit, revert it directly
+        if (pendingEntryRef.current) {
+          clearTimeout(debounceRef.current);
+          const entry = pendingEntryRef.current;
+          pendingEntryRef.current = null;
+          setLines(prev => {
+            const next = [...prev];
+            next[entry.lineIndex] = entry.before;
+            return next;
+          });
+          setActiveLine(entry.activeLine);
+          return; // 👈 don't fall through to history undo
+        }
+
+        // Normal undo from history
+        if (historyIndexRef.current < 0) return;
+        const entry = history[historyIndexRef.current];
         setLines(prev => {
           const next = [...prev];
           next[entry.lineIndex] = entry.before;
           return next;
         });
-        setActiveLine(entry.activeLine);
+        setActiveLine(entry.lineIndex);
         setHistoryIndex(i => i - 1);
       }
       if ((e.key === "z" && e.shiftKey) || e.key === "y") {
@@ -79,7 +115,7 @@ export default function App() {
           next[entry.lineIndex] = entry.after;
           return next;
         });
-        setActiveLine(entry.activeLine);
+        setActiveLine(entry.lineIndex);
         setHistoryIndex(i => i + 1);
       }
     };
