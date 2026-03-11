@@ -17,6 +17,8 @@ interface Props {
   onOpenImport: () => void;
   initialVideoUrl?: string;
   handleExport: () => void;
+  activeLine: number | null;
+  onActiveLineChange: (i: number | null) => void;
 }
 
 type SubtitleDisplay = "off" | "source" | "target";
@@ -27,7 +29,9 @@ function timeStrToSeconds(timeStr: string): number {
   return +p[0] * 3600 + +p[1] * 60 + +p[2] + +p[3] / 1000;
 }
 
-export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, initialVideoUrl, handleExport }: Props) {
+export function Editor({ isDark, lines, onLinesChange, settings,
+  onOpenImport, initialVideoUrl, handleExport,
+  activeLine, onActiveLineChange }: Props) {
   const t = useTheme(isDark);
   const [engine, setEngine] = useState<TranslationEngine>(settings.defaultEngine);
   const [sourceLang, setSourceLang] = useState(settings.defaultSourceLang || "English");
@@ -36,7 +40,6 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
   const [videoUrl, setVideoUrl] = useState<string | null>(initialVideoUrl ?? null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [activeLine, setActiveLine] = useState<number | null>(null);
   const [videoSize, setVideoSize] = useState(320);
   const [subtitleDisplay, setSubtitleDisplay] = useState<SubtitleDisplay>("target");
   const mainRef = useRef<HTMLDivElement>(null);
@@ -93,7 +96,7 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
 
         // Check if current video time is within the subtitle line's time range
         if (t >= start && t <= end) {
-          setActiveLine(i);
+          onActiveLineChange(i);
           break;
         }
       }
@@ -131,9 +134,8 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
       }
 
       // avoid re-setting state every tick
-      if (found !== -1) {
-        setActiveLine((prev) => (prev === found ? prev : found));
-      }
+      if (activeLine !== found) onActiveLineChange(found);
+
     };
 
     // update immediately + on changes
@@ -235,29 +237,27 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
       // Jump by 1
       if (e.key === "ArrowDown" && !e.shiftKey && !e.metaKey) {
         e.preventDefault();
-        setActiveLine(prev => prev === null ? 0 : Math.min(prev + 1, lines.length - 1));
+        onActiveLineChange(activeLine === null ? 0 : Math.min(activeLine + 1, lines.length - 1));
 
       } else if (e.key === "ArrowUp" && !e.shiftKey && !e.metaKey) {
         e.preventDefault();
-        setActiveLine(prev => prev === null ? 0 : Math.max(prev - 1, 0));
-
+        onActiveLineChange(activeLine === null ? 0 : Math.max(activeLine - 1, 0));
         // Jump by 10
       } else if (e.key === "ArrowDown" && e.shiftKey) {
         e.preventDefault();
-        setActiveLine(prev => prev === null ? 0 : Math.min(prev + 10, lines.length - 1));
+        onActiveLineChange(activeLine === null ? 0 : Math.min(activeLine + 10, lines.length - 1));
 
       } else if (e.key === "ArrowUp" && e.shiftKey) {
         e.preventDefault();
-        setActiveLine(prev => prev === null ? 0 : Math.max(prev - 10, 0));
-
+        onActiveLineChange(activeLine === null ? 0 : Math.max(activeLine - 10, 0));
         // Jump by 50
       } else if (e.key === "ArrowDown" && e.metaKey) {
         e.preventDefault();
-        setActiveLine(prev => prev === null ? 0 : Math.min(prev + 50, lines.length - 1));
+        onActiveLineChange(activeLine === null ? 0 : Math.min(activeLine + 50, lines.length - 1));
 
       } else if (e.key === "ArrowUp" && e.metaKey) {
         e.preventDefault();
-        setActiveLine(prev => prev === null ? 0 : Math.max(prev - 50, 0));
+        onActiveLineChange(activeLine === null ? 0 : Math.max(activeLine - 50, 0));
 
         // Tab → next untranslated
       } else if (e.key === "Tab" && !e.shiftKey) {
@@ -266,7 +266,7 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
         const start = current === null ? 0 : current + 1;
         let idx = lines.findIndex((l, i) => i >= start && !l.translation?.trim());
         if (idx === -1) idx = lines.findIndex(l => !l.translation?.trim()); // wrap
-        if (idx !== -1) setActiveLine(idx);
+        if (idx !== -1) onActiveLineChange(idx);
         // Shift + Tab → previous untranslated
       } else if (e.key === "Tab" && e.shiftKey) {
         e.preventDefault();
@@ -281,7 +281,7 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
             if (!lines[i].translation?.trim()) { idx = i; break; }
           }
         }
-        if (idx !== -1) setActiveLine(idx);
+        if (idx !== -1) onActiveLineChange(idx);
 
       }
 
@@ -293,7 +293,7 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
         // Stop it from disabling full-screen etc.
         e.preventDefault();
         if (searchOpen) { setSearchOpen(false); setSearchQuery(""); }
-        else setActiveLine(null);
+        else onActiveLineChange(null);
       }
       if (e.key === "Enter" && searchOpen && searchQuery) {
         e.preventDefault();
@@ -306,7 +306,7 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
           ? (searchMatchIndex - 1 + matches.length) % matches.length
           : (searchMatchIndex + 1) % matches.length;
         setSearchMatchIndex(next);
-        setActiveLine(matches[next]);
+        onActiveLineChange(matches[next]);
       }
     };
 
@@ -382,7 +382,7 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
         isDark={isDark}
         lines={lines}
         activeLine={activeLine}
-        onActiveLine={setActiveLine}
+        onActiveLine={onActiveLineChange}
         onLineChange={updateLine}
         onRetranslateLine={handleRetranslateLine}
         engine={engine}
@@ -458,7 +458,7 @@ export function Editor({ isDark, lines, onLinesChange, settings, onOpenImport, i
                   ? (searchMatchIndex - 1 + matches.length) % matches.length
                   : (searchMatchIndex + 1) % matches.length;
                 setSearchMatchIndex(next);
-                setActiveLine(matches[next]);
+                onActiveLineChange(matches[next]);
               }
             }}
             placeholder="Search lines…"

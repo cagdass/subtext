@@ -18,6 +18,34 @@ interface Props {
   searchQuery?: string;
 }
 
+function TranslationTextarea({ value, onChange, isActive, engine, t }: {
+  value: string;
+  onChange: (v: string) => void;
+  isActive: boolean;
+  engine: string;
+  t: ReturnType<typeof useTheme>;
+}) {
+  const [local, setLocal] = useState(value);
+
+  // Sync if parent value changes (e.g. from translation or undo)
+  useEffect(() => { setLocal(value); }, [value]);
+
+  return (
+    <textarea
+      value={local}
+      placeholder={engine === "manual" ? "Enter translation..." : "Not translated yet"}
+      onChange={e => setLocal(e.target.value)}
+      onBlur={() => { if (local !== value) onChange(local); }} // 👈 only push on blur
+      rows={isActive ? 2 : 1}
+      style={{
+        background: "transparent", border: "none", color: t.text, width: "100%",
+        fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, lineHeight: 1.5,
+        resize: "none", outline: "none",
+      }}
+    />
+  );
+}
+
 function TimeInput({ value, onChange, t }: { value: string; onChange: (v: string) => void; t: ReturnType<typeof useTheme> }) {
   const [editing, setEditing] = useState(false);
   const [local, setLocal] = useState(value);
@@ -182,26 +210,20 @@ export function SubtitlePanel({
                 {highlightText(line.translation, searchQuery, t.accent)}
               </div>
             ) : line.translation ? (
-              <textarea
-                value={line.translation}
-                onChange={e => { e.stopPropagation(); onLineChange(idx, { translation: e.target.value }); }}
-                rows={isActive ? 2 : 1}
-                style={{
-                  background: "transparent", border: "none", color: t.text, width: "100%",
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, lineHeight: 1.5,
-                  resize: "none", outline: "none",
-                }}
+              <TranslationTextarea
+                value={line.translation ?? ""}
+                onChange={v => onLineChange(idx, { translation: v })}
+                isActive={isActive}
+                engine={engine}
+                t={t}
               />
             ) : (
-              <textarea
-                placeholder={engine === "manual" ? "Enter translation..." : "Not translated yet"}
-                onChange={e => { e.stopPropagation(); onLineChange(idx, { translation: e.target.value }); }}
-                rows={isActive ? 2 : 1}
-                style={{
-                  background: "transparent", border: "none", color: t.text, width: "100%",
-                  fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, lineHeight: 1.5,
-                  resize: "none", outline: "none",
-                }}
+              <TranslationTextarea
+                value={line.translation ?? ""}
+                onChange={v => onLineChange(idx, { translation: v })}
+                isActive={isActive}
+                engine={engine}
+                t={t}
               />
             )
           ) : (

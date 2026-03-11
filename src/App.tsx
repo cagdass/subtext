@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Editor } from "./components/Editor";
 import { ImportScreen } from "./components/ImportScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
@@ -13,12 +13,79 @@ import { serialiseSrt } from "./lib/parser";
 
 export type Screen = "editor" | "import" | "settings";
 
+interface HistoryEntry {
+  lineIndex: number;
+  before: SubtitleLine;
+  after: SubtitleLine;
+  activeLine: number | null;
+}
+
 export default function App() {
   const [settings, setSettings] = useState<AppSettings>(loadSettings);
   const [screen, setScreen] = useState<Screen>("import");
   const [lines, setLines] = useState<SubtitleLine[]>([]);
   const [isDark, setIsDark] = useState(true);
   const [pendingVideoUrl, setPendingVideoUrl] = useState<string | null>(null);
+  // History state
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const historyIndexRef = useRef(-1);
+  useEffect(() => { historyIndexRef.current = historyIndex; }, [historyIndex]);
+
+  const [activeLine, setActiveLine] = useState<number | null>(null);
+
+  const handleLinesChange = (newLines: SubtitleLine[]) => {
+    const changedIndex = newLines.findIndex((l, i) => l !== lines[i]);
+    if (changedIndex !== -1) {
+      const entry: HistoryEntry = {
+        lineIndex: changedIndex,
+        before: lines[changedIndex],
+        after: newLines[changedIndex],
+        activeLine,
+      };
+      clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        setHistory(prev => [...prev.slice(0, historyIndexRef.current + 1), entry]);
+        setHistoryIndex(i => i + 1);
+      }, 600);
+    }
+    setLines(newLines);
+  };
+
+
+  // Undo/redo listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey)) return;
+      if (e.key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        if (historyIndex < 0) return; // 👈 < not <=
+        const entry = history[historyIndex]; // 👈 not historyIndex - 1
+        setLines(prev => {
+          const next = [...prev];
+          next[entry.lineIndex] = entry.before;
+          return next;
+        });
+        setActiveLine(entry.activeLine);
+        setHistoryIndex(i => i - 1);
+      }
+      if ((e.key === "z" && e.shiftKey) || e.key === "y") {
+        e.preventDefault();
+        if (historyIndex >= history.length - 1) return;
+        const entry = history[historyIndex + 1]; // 👈 this one was correct
+        setLines(prev => {
+          const next = [...prev];
+          next[entry.lineIndex] = entry.after;
+          return next;
+        });
+        setActiveLine(entry.activeLine);
+        setHistoryIndex(i => i + 1);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", handleKeyDown, { capture: true });
+  }, [history, historyIndex]);
 
   // Listen for "open file" events from the main process
   useEffect(() => {
@@ -102,6 +169,7 @@ export default function App() {
         overflow: "hidden",
       }}
     >
+      <code>{JSON.stringify(history)}</code>
       <Titlebar
         isDark={isDark}
         screen={screen}
@@ -133,11 +201,13 @@ export default function App() {
         <Editor
           isDark={isDark}
           lines={lines}
-          onLinesChange={setLines}
+          onLinesChange={handleLinesChange}
           settings={settings}
           onOpenImport={() => setScreen("import")}
           initialVideoUrl={pendingVideoUrl ?? undefined}
           handleExport={handleExport}
+          activeLine={activeLine}
+          onActiveLineChange={setActiveLine}
         />
       )}
     </div>
